@@ -85,11 +85,10 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Blinder PWA
 
-- The repository root contains the static app. `index.html`, `styles.css`, and `app.js` handle the interface, installation controls, and browser status. `manifest.webmanifest` and the PNG icons define Home Screen installation. `sw.js` caches the offline shell.
-- GitHub Pages serves the root of `main` over HTTPS. Keep app URLs relative so the same files work on localhost and under the Pages repository path. `.nojekyll` serves the files directly.
-- When changing cached app files, update the shell list in `sw.js` as needed and increment its cache version. Keep cache deletion scoped to this app and preserve a working offline shell when an update fails.
-- See `README.md` for local and phone testing. Verify a browser load, service-worker control, and an offline reload when changing the shell. Check the install controls at a mobile viewport.
+- Use the Blinder GitHub repository for source and commit history. ChatGPT Sites hosts the HTTPS preview using the project in `.openai/hosting.json`.
+- The PWA is buildless. Edit its source under `dist/` and publish those files with the existing Sites project.
+- See `README.md` for local and phone testing.
 
 ## Child DOX Index
 
-- No child AGENTS.md files yet. The root AGENTS.md covers the workspace.
+- [dist/AGENTS.md](dist/AGENTS.md) covers the PWA source, offline behavior, and browser verification.
