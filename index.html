@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f1f0f8">
+    <title>Blinder</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <img class="mark" src="./icon-192.png" width="64" height="64" alt="">
+        <h1>Blinder</h1>
+        <p>Try Blinder in your browser or install it to open it from your home screen.</p>
+      </header>
+
+      <dl aria-live="polite">
+        <div>
+          <dt>Connection</dt>
+          <dd id="connection">Checking…</dd>
+        </div>
+        <div>
+          <dt>Offline access</dt>
+          <dd id="offline-access">Getting ready…</dd>
+        </div>
+      </dl>
+
+      <button id="install-button" type="button" hidden>Install Blinder</button>
+      <details id="install-help">
+        <summary>Install Blinder</summary>
+        <ul>
+          <li><strong>iPhone</strong> · In Safari, tap Share, then Add to Home Screen. Turn on Open as Web App if prompted.</li>
+          <li><strong>Android</strong> · In Chrome, open the menu and choose Add to home screen or Install app.</li>
+          <li><strong>Desktop</strong> · Look for Install in your browser’s address bar or menu. In Safari, choose File, then Add to Dock.</li>
+        </ul>
+      </details>
+      <noscript><p>Enable JavaScript to check your connection and prepare offline access.</p></noscript>
+    </main>
+  </body>
+</html>

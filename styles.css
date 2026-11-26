@@ -1,0 +1,108 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  color: #222139;
+  background: #f1f0f8;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  min-block-size: 100vh;
+  min-block-size: 100svh;
+  margin: 0;
+  padding: clamp(1rem, 5vw, 3rem);
+}
+
+.shell {
+  inline-size: min(100%, 30rem);
+  padding: clamp(1.25rem, 5vw, 2.5rem);
+  border: 1px solid #dedceb;
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: 0 1.25rem 3.5rem #27214212;
+}
+
+.mark {
+  display: block;
+  border-radius: 1rem;
+}
+
+h1 {
+  margin: 1rem 0 0.25rem;
+  font-size: clamp(2.25rem, 8vw, 3rem);
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+}
+
+p {
+  margin: 0;
+  color: #55536a;
+}
+
+dl {
+  margin-block: 1.75rem;
+  padding: 0.25rem 1rem;
+  border-radius: 0.875rem;
+  background: #f5f4fa;
+  font-size: 0.9375rem;
+}
+
+dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.125rem 0.75rem;
+  padding-block: 0.625rem;
+}
+
+dl > div + div {
+  border-top: 1px solid #dedceb;
+}
+
+dd {
+  margin: 0;
+  font-weight: 650;
+}
+
+button, summary {
+  min-block-size: 2.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button {
+  inline-size: 100%;
+  background: #2e254f;
+  color: #fff;
+}
+
+summary {
+  border-color: #dedceb;
+  color: #2e254f;
+}
+
+button:focus-visible, summary:focus-visible {
+  outline: 2px solid #7257d2;
+  outline-offset: 3px;
+}
+
+ul {
+  margin-bottom: 0;
+  padding-inline-start: 1.25rem;
+  color: #55536a;
+  font-size: 0.9375rem;
+}
+
+li + li {
+  margin-block-start: 0.5rem;
+}
