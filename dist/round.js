@@ -1,6 +1,7 @@
-export const outingLabels = { any: "Anything", brunch: "Brunch", lunch: "Lunch", dinner: "Dinner", drinks: "Drinks" };
+export const outingLabels = { any: "Anything", coffee: "Coffee", brunch: "Brunch", lunch: "Lunch", dinner: "Dinner", drinks: "Drinks" };
 const decks = {
   any: [0, 1, 2, 18, 11, 3, 24, 4, 19, 5, 25, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 20, 21, 22, 23, 26, 27, 28, 29],
+  coffee: [23, 21, 22, 18],
   brunch: [18, 19, 20, 21, 22, 23],
   lunch: [0, 1, 2, 4, 6, 7, 8, 10, 19, 20, 21, 23],
   dinner: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16],
