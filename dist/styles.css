@@ -115,6 +115,7 @@ input::placeholder { color: #8b7580; }
 
 .panel h1 { font-size: clamp(2.15rem, 8vw, 3rem); }
 .panel .secondary { margin-top: -.45rem; }
+.room-name-button { justify-self: start; padding-left: 0; }
 .heading-row { display: flex; align-items: baseline; gap: .75rem; justify-content: space-between; margin: .4rem 0 .55rem; }
 .heading-row h1 { font: 700 1.5rem Georgia, serif; letter-spacing: -.04em; }
 .counter { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
@@ -161,6 +162,11 @@ dialog { width: min(100% - 1.2rem, 29rem); min-height: 12rem; max-height: 85svh;
 dialog::backdrop { background: #27141a77; backdrop-filter: blur(3px); }
 .sheet-top { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin-bottom: .85rem; }
 #sheet-body { display: grid; gap: .8rem; }
+#sheet-body h3 { margin: 0; font-size: 1rem; }
+.entry-form, .entry-form label { display: grid; gap: .45rem; }
+.account-list li { flex-wrap: wrap; overflow-wrap: anywhere; }
+.account-actions { display: flex; flex-wrap: wrap; gap: .1rem; }
+.account-status { font-size: .88rem; }
 .room-feed-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
 .room-feed {
   display: grid;

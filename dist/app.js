@@ -3,6 +3,7 @@ import { venues } from "./venues.js";
 
 const screen = document.querySelector("#screen");
 const menuButton = document.querySelector("#room-menu");
+const friendsButton = document.querySelector("#friends-menu");
 const rejoinButton = document.querySelector("#rejoin-room");
 const outingChip = document.querySelector("#outing-chip");
 const sheet = document.querySelector("#sheet");
@@ -22,6 +23,12 @@ let polling = false;
 let toastTimer;
 let installPrompt;
 let sheetMode;
+let account;
+let accountPolling = false;
+let accountWriting = false;
+let accountVersion = 0;
+let checkedRoom;
+const sentInvites = new Set();
 
 const element = (tag, text, className) => {
   const node = document.createElement(tag);
@@ -65,6 +72,14 @@ async function copyLink() {
   }
 }
 
+async function shareInvite() {
+  try {
+    await navigator.share({ title: view.title || "Join my Blinder room", url: inviteLink() });
+  } catch (error) {
+    if (error.name !== "AbortError") await copyLink();
+  }
+}
+
 function openSheet(title, content, mode) {
   sheetMode = mode;
   sheetTitle.textContent = title;
@@ -76,21 +91,208 @@ const feedKey = (feed) => `blinder-read:${view.code}:${feed}`;
 const feedItems = (feed) => view?.[feed] ?? [];
 const unread = (feed) => feedItems(feed).filter((entry) =>
   !entry.mine && entry.id > Number(localStorage.getItem(feedKey(feed)) ?? 0)).length;
+const accountUnread = () => (account?.invites ?? []).filter(invite => !invite.joined).length
+  + (account?.friends ?? []).filter(friend => !friend.accepted && !friend.sent).length;
+
+function badge(control, label, count) {
+  control.replaceChildren(label);
+  control.setAttribute("aria-label", count ? `${label}, ${count} unread updates` : label);
+  if (count) control.append(element("span", String(count), "unread-count"));
+}
 
 function refreshRoomMenu() {
+  friendsButton.hidden = Boolean(view);
+  badge(friendsButton, "Friends", accountUnread());
   menuButton.hidden = !view || Boolean(demo);
   if (!view || demo) return;
-  const count = unread("messages") + unread("activity");
-  const label = `Room · ${view.people.length}`;
-  menuButton.replaceChildren(label);
-  menuButton.setAttribute("aria-label", count ? `${label}, ${count} unread updates` : label);
-  if (count) menuButton.append(element("span", String(count), "unread-count"));
+  badge(menuButton, `Room · ${view.people.length}`, unread("messages") + unread("activity") + accountUnread());
   if (sheetMode === "room" && sheet.open) {
+    sheetTitle.textContent = view.title || "Group room";
     for (const control of sheetBody.querySelectorAll("[data-feed]")) {
       const unseen = unread(control.dataset.feed);
       control.textContent = unseen ? `${control.dataset.label} · ${unseen}` : control.dataset.label;
     }
   }
+}
+
+function pageLink(label, href, className = "primary") {
+  const link = element("a", label, className);
+  link.href = href;
+  return link;
+}
+
+function signInLink() {
+  const current = new URL(location.href);
+  current.searchParams.set("friends", "1");
+  const link = pageLink("Sign in with ChatGPT",
+    `/signin-with-chatgpt?return_to=${encodeURIComponent(current.pathname + current.search)}`);
+  link.target = "_top";
+  return link;
+}
+
+function entryForm(label, hint, maxLength, submitLabel, submit, value = "") {
+  const form = element("form", undefined, "entry-form");
+  const field = element("label", label);
+  const input = element("input");
+  input.name = "value";
+  input.placeholder = hint;
+  input.maxLength = maxLength;
+  input.required = true;
+  input.value = value;
+  field.append(input);
+  const submitButton = element("button", submitLabel, "primary");
+  submitButton.type = "submit";
+  form.append(field, submitButton);
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const text = input.value.trim();
+    if (!text || submitButton.disabled) return;
+    submitButton.disabled = true;
+    try {
+      await submit(text);
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+  return form;
+}
+
+function renameRoom() {
+  const form = entryForm("Room name", "e.g. Alex’s birthday", 48, "Save room name", async title => {
+    if (await act({ type: "rename", title })) sheet.close();
+    else accountStatus("Could not save the room name. Try again.");
+  }, view.title);
+  openSheet("Name your room", [form]);
+}
+
+const accountStatus = (message) => {
+  let status = sheetBody.querySelector(".account-status");
+  if (!status) {
+    status = element("p", "", "account-status");
+    status.setAttribute("role", "status");
+    sheetBody.append(status);
+  }
+  status.textContent = message;
+};
+
+async function accountAction(action) {
+  if (accountWriting) return false;
+  accountWriting = true;
+  accountVersion++;
+  try {
+    account = await request("./api/account", { method: "POST", body: JSON.stringify(action) });
+    refreshRoomMenu();
+    return true;
+  } catch (error) {
+    accountStatus(error.status ? error.message : "Could not reach Blinder. Try again.");
+    return false;
+  } finally {
+    accountWriting = false;
+  }
+}
+
+function friendsMenu() {
+  const title = "Friends & invites";
+  if (!account?.signedIn) {
+    openSheet(title, [
+      element("p", "Sign in so your friends and invites follow you across devices. Friends see the Blinder username you choose."),
+      signInLink(),
+    ], "friends");
+    return;
+  }
+  const signOut = pageLink("Sign out", "/signout-with-chatgpt?return_to=%2F", "text-button");
+  signOut.target = "_top";
+  if (!account.handle) {
+    openSheet(title, [
+      element("p", "Choose a username friends can use to find you."),
+      entryForm("Blinder username", "e.g. alex", 20, "Save username", async handle => {
+        if (await accountAction({ type: "profile", handle })) friendsMenu();
+      }),
+      signOut,
+    ], "friends");
+    return;
+  }
+  const contents = [element("p", `You’re @${account.handle}.`)];
+  if (account.invites.length) {
+    const invites = element("ul", undefined, "people account-list");
+    for (const invite of account.invites) {
+      const row = element("li");
+      const label = element("div");
+      label.append(element("strong", invite.title || "Group room"), element("p", `From @${invite.sender}`));
+      const options = element("div", undefined, "account-actions");
+      options.append(pageLink(invite.joined ? "Open room" : "Join room", inviteLink(invite.code), "text-button"));
+      if (!invite.joined) options.append(button("Dismiss", async () => {
+        if (await accountAction({ type: "dismiss-invite", code: invite.code })) friendsMenu();
+      }, "text-button"));
+      row.append(label, options);
+      invites.append(row);
+    }
+    contents.push(element("h3", "Room invites"), invites);
+  }
+  if (account.friends.length) {
+    const people = element("ul", undefined, "people account-list");
+    for (const friend of account.friends) {
+      const row = element("li");
+      const label = element("div");
+      const labelText = friend.accepted ? "Friend" : friend.sent ? "Request sent" : "Wants to connect";
+      label.append(element("strong", `@${friend.handle}`), element("p", labelText));
+      const options = element("div", undefined, "account-actions");
+      if (!friend.accepted && !friend.sent) options.append(button("Accept", async () => {
+        if (await accountAction({ type: "accept-friend", handle: friend.handle })) friendsMenu();
+      }, "text-button"));
+      options.append(button(friend.accepted ? "Remove" : friend.sent ? "Cancel" : "Decline", async () => {
+        if (await accountAction({ type: "remove-friend", handle: friend.handle })) friendsMenu();
+      }, "text-button"));
+      row.append(label, options);
+      people.append(row);
+    }
+    contents.push(element("h3", "Friends"), people);
+  }
+  contents.push(entryForm("Friend’s username", "e.g. @alex", 21, "Send friend request", async handle => {
+    if (await accountAction({ type: "add-friend", handle })) friendsMenu();
+  }), signOut);
+  openSheet(title, contents, "friends");
+}
+
+function inviteFriends() {
+  if (!account?.handle) {
+    friendsMenu();
+    return;
+  }
+  const friends = account.friends.filter(friend => friend.accepted);
+  const contents = [];
+  if (friends.length) {
+    const list = element("ul", undefined, "people");
+    for (const friend of friends) {
+      const row = element("li");
+      const inviteId = `${view.code}/${friend.handle}`;
+      const send = button(sentInvites.has(inviteId) ? "Invited" : "Invite", async () => {
+        send.disabled = true;
+        if (await accountAction({ type: "invite", handle: friend.handle, code: view.code })) {
+          sentInvites.add(inviteId);
+          send.textContent = "Invited";
+        } else {
+          send.disabled = false;
+        }
+      }, "text-button");
+      send.disabled = sentInvites.has(inviteId);
+      row.append(element("span", `@${friend.handle}`), send);
+      list.append(row);
+    }
+    contents.push(list);
+  } else {
+    contents.push(element("p", "Add a friend by their Blinder username. You can invite them after they accept."));
+  }
+  contents.push(button("Friends & invites", friendsMenu, "secondary"));
+  openSheet("Invite friends", contents, "invite-friends");
+}
+
+function inviteControls() {
+  const controls = [];
+  if (navigator.share) controls.push(button("Share invite", shareInvite));
+  controls.push(button("Copy invite link", copyLink, navigator.share ? "secondary" : "primary"));
+  if (view.host) controls.push(button("Invite friends", inviteFriends, "secondary"));
+  return controls;
 }
 
 function refreshFeed() {
@@ -269,15 +471,18 @@ function roomMenu() {
     control.dataset.label = label;
     feeds.append(control);
   }
-  const options = [feeds, peopleList(view.host)];
-  if (view.phase === "lobby") options.unshift(button("Copy invite link", copyLink));
+  const options = [feeds, peopleList(view.host), button("Friends & invites", friendsMenu, "text-button")];
+  if (view.phase === "lobby") {
+    options.unshift(...inviteControls());
+    if (view.host) options.push(button("Rename room", renameRoom, "text-button"));
+  }
   if (view.host && view.phase === "confirm" && view.canExtend) {
     options.push(button("Add more sample places", () => {
       sheet.close();
       act({ type: "extend" });
     }, "secondary"));
   }
-  openSheet("Group room", options, "room");
+  openSheet(view.title || "Group room", options, "room");
   refreshRoomMenu();
 }
 
@@ -304,6 +509,7 @@ function render() {
   screen.replaceChildren();
   if (!view) {
     screen.append(document.querySelector("#home").content.cloneNode(true));
+    screen.querySelector("#nickname").value = account?.handle ?? "";
     installButton.hidden = !installPrompt;
     const outing = screen.querySelector("#outing");
     for (const [value, label] of Object.entries(outingLabels)) outing.add(new Option(label, value));
@@ -320,15 +526,20 @@ function render() {
   installButton.hidden = true;
 
   if (view.phase === "lobby") {
-    screen.append(panel("Group room", [
-      element("p", "Share the link. Start when everyone is here."),
+    const canStart = view.people.length >= 2;
+    const hint = element("p", canStart ? "Start when everyone is here." : "Waiting for a friend to join. Start swiping turns on when someone joins.");
+    hint.id = "lobby-start-hint";
+    const start = button("Start swiping", () => act({ type: "start" }), "secondary");
+    start.disabled = !canStart;
+    start.setAttribute("aria-describedby", hint.id);
+    screen.append(panel(view.title || "Group room", [
+      ...(view.host ? [button(view.title ? "Rename room" : "Name room", renameRoom, "text-button room-name-button"), hint] : []),
       peopleList(),
-      button("Copy invite link", copyLink),
-      ...(view.host ? [button("Start swiping", () => act({ type: "start" }), "secondary")] : [
+      ...inviteControls(),
+      ...(view.host ? [start] : [
         element("p", "Waiting for the host to start."),
       ]),
     ]));
-    if (view.host) screen.querySelector(".secondary").disabled = view.people.length < 2;
     return;
   }
 
@@ -433,8 +644,11 @@ async function join(event) {
     const { key: newKey, view: next } = await request(roomCode ? `./api/rooms/${roomCode}` : "./api/rooms", {
       method: "POST", body: JSON.stringify(roomCode ? { type: "join", name } : { name, outing }),
     });
-    key = newKey;
-    localStorage.setItem(keyName(next.code), key);
+    if (newKey) {
+      key = newKey;
+      localStorage.setItem(keyName(next.code), key);
+    }
+    checkedRoom = null;
     localStorage.setItem(lastRoomKey, next.code);
     update(next);
     history.replaceState(null, "", inviteLink());
@@ -498,9 +712,9 @@ async function act(action) {
 }
 
 async function refresh() {
-  if (demo || busy || polling || document.hidden || !key) return;
+  if (demo || busy || polling || document.hidden) return;
   const code = view?.code ?? roomCode;
-  if (!code) return;
+  if (!code || !key && (!account?.signedIn || checkedRoom === code)) return;
   polling = true;
   try {
     const { view: next } = await request(`./api/rooms/${code}`);
@@ -508,16 +722,48 @@ async function refresh() {
     update(next);
   } catch (error) {
     if (error.status === 401 || error.status === 404) {
+      checkedRoom = code;
       localStorage.removeItem(keyName(code));
       if (localStorage.getItem(lastRoomKey) === code) localStorage.removeItem(lastRoomKey);
       key = null;
       view = undefined;
       if (sheet.open) sheet.close();
       render();
-      tell(error.message);
+      if (error.status === 404) tell(error.message);
     }
   } finally {
     polling = false;
+  }
+}
+
+async function refreshAccount() {
+  if (document.hidden || accountPolling || accountWriting) return;
+  const version = accountVersion;
+  const previouslyLoaded = Boolean(account);
+  accountPolling = true;
+  try {
+    const next = await request("./api/account");
+    if (version !== accountVersion) return;
+    const changed = JSON.stringify(next) !== JSON.stringify(account);
+    const alerted = accountUnread();
+    account = next;
+    refreshRoomMenu();
+    if (changed && accountUnread() > alerted && previouslyLoaded && !sheet.open) tell("You have a new update in Friends.");
+    const url = new URL(location.href);
+    if (url.searchParams.has("friends")) {
+      url.searchParams.delete("friends");
+      history.replaceState(null, "", url);
+      friendsMenu();
+    } else if (changed && sheet.open && sheetMode === "friends" && !sheetBody.querySelector("input")?.value) {
+      friendsMenu();
+    }
+    const nicknameInput = screen.querySelector("#nickname");
+    if (nicknameInput && !nicknameInput.value && account.handle) nicknameInput.value = account.handle;
+    if (account.signedIn) refresh();
+  } catch {
+    // The guest lobby and solo demo can open without loading a profile.
+  } finally {
+    accountPolling = false;
   }
 }
 
@@ -534,6 +780,7 @@ installButton.addEventListener("click", async () => {
   await prompt.prompt();
 });
 menuButton.addEventListener("click", roomMenu);
+friendsButton.addEventListener("click", friendsMenu);
 document.addEventListener("keydown", (event) => {
   if (sheet.open || view?.phase !== "swipe" || view.next === null || event.repeat) return;
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -545,8 +792,13 @@ window.addEventListener("offline", () => {
 });
 window.addEventListener("online", refresh);
 document.addEventListener("visibilitychange", refresh);
+document.addEventListener("visibilitychange", refreshAccount);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
 render();
 refresh();
+refreshAccount();
 setInterval(refresh, 1700);
+setInterval(() => {
+  if (account?.signedIn) refreshAccount();
+}, 10000);

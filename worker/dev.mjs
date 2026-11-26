@@ -1,17 +1,21 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 
 await import("./build.mjs");
 const { default: worker } = await import("../dist/server/index.js");
 const database = new DatabaseSync(":memory:");
-database.exec(await readFile(new URL("../drizzle/0000_rooms.sql", import.meta.url), "utf8"));
+const migrations = new URL("../drizzle/", import.meta.url);
+for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql")).sort()) {
+  database.exec(await readFile(new URL(file, migrations), "utf8"));
+}
 
 const DB = {
   prepare(sql) {
     const statement = database.prepare(sql);
     return { bind: (...params) => ({
       first: () => statement.get(...params),
+      all: () => ({ results: statement.all(...params) }),
       run: async () => ({ meta: statement.run(...params) }),
     }) };
   },

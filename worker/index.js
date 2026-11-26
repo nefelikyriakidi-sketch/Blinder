@@ -1,4 +1,5 @@
 import { RoundError, applyAction, createRound, member, outingLabels, recordActivity, viewOf } from "../dist/round.js";
+import { accountOf, handleAccount } from "./profiles.js";
 
 const ROOM_LIFETIME = 24 * 60 * 60 * 1000;
 const MAX_MEMBERS = 12;
@@ -22,9 +23,9 @@ async function hash(value) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function makeMember(name) {
+async function makeMember(name, accountId) {
   const key = token();
-  return { key, person: member(token().slice(0, 12), nickname(name), await hash(key)) };
+  return { key, person: member(token().slice(0, 12), nickname(name), await hash(key), accountId || undefined) };
 }
 
 async function bodyOf(request) {
@@ -60,6 +61,8 @@ async function bodyOf(request) {
 async function handleApi(request, db, context) {
   if (!db) throw new RoundError("Shared rooms are temporarily unavailable. You can still try the solo demo.", 503);
   const path = new URL(request.url).pathname;
+  if (path === "/api/account") return handleAccount(request, db, { bodyOf, hash, json });
+  const accountId = accountOf(request);
 
   if (path === "/api/rooms" && request.method === "POST") {
     const body = await bodyOf(request);
@@ -67,7 +70,7 @@ async function handleApi(request, db, context) {
     if (typeof outing !== "string" || !Object.hasOwn(outingLabels, outing)) {
       throw new RoundError("Choose a supported outing.", 400);
     }
-    const { key, person } = await makeMember(body.name);
+    const { key, person } = await makeMember(body.name, accountId);
     const room = createRound(person, outing);
     const code = token().slice(0, 12);
     const now = Date.now();
@@ -82,10 +85,10 @@ async function handleApi(request, db, context) {
   const code = match[1];
   const action = request.method === "POST" ? await bodyOf(request) : null;
   const joining = action?.type === "join";
-  const invite = joining ? await makeMember(action.name) : null;
+  const invite = joining ? await makeMember(action.name, accountId) : null;
   const authorization = request.headers.get("Authorization") ?? "";
   const key = authorization.match(/^Bearer ([a-f0-9]{32})$/)?.[1];
-  if (!joining && !key) throw new RoundError("Join this room to continue.", 401);
+  if (!joining && !key && !accountId) throw new RoundError("Join this room to continue.", 401);
   const tokenHash = key ? await hash(key) : null;
 
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -95,13 +98,16 @@ async function handleApi(request, db, context) {
     const room = JSON.parse(row.state);
     let person;
     if (joining) {
+      const existing = accountId && room.members.find(candidate => candidate.accountId === accountId);
+      if (existing) return json({ view: viewOf(room, existing, code, row.revision) });
       if (room.phase !== "lobby") throw new RoundError("The round has already started.");
       if (room.members.length >= MAX_MEMBERS) throw new RoundError("This room is full.");
       person = invite.person;
       room.members.push(person);
       recordActivity(room, `${person.name} joined the room.`);
     } else {
-      person = room.members.find((candidate) => candidate.tokenHash === tokenHash);
+      person = room.members.find((candidate) => candidate.tokenHash === tokenHash
+        || accountId && candidate.accountId === accountId);
       if (!person) throw new RoundError("Join this room to continue.", 401);
       if (!action) return json({ view: viewOf(room, person, code, row.revision) });
       applyAction(room, person, action);

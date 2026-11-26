@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the D1 schema for shared dinner rooms.
+Define the D1 schema for rooms, profiles, friendships, and invitations.
 
 ## Local Contracts
 
@@ -11,4 +11,4 @@ Define the D1 schema for shared dinner rooms.
 
 ## Verification
 
-- Start the local Worker and exercise room creation before deploying a migration.
+- Start the local Worker and exercise room creation and profile invites before deploying a migration.

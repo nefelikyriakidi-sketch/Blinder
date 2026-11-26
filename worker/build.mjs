@@ -22,10 +22,15 @@ for (const [file, type] of Object.entries(types)) {
 }
 
 const rules = await readFile(new URL("dist/round.js", root), "utf8");
+const profiles = await readFile(new URL("worker/profiles.js", root), "utf8");
 const worker = await readFile(new URL("worker/index.js", root), "utf8");
-const importLine = 'import { RoundError, applyAction, createRound, member, outingLabels, recordActivity, viewOf } from "../dist/round.js";';
-if (!worker.startsWith(importLine)) throw new Error("Missing shared round import in Worker entry point.");
+const profileImport = 'import { RoundError } from "../dist/round.js";';
+const workerImports = 'import { RoundError, applyAction, createRound, member, outingLabels, recordActivity, viewOf } from "../dist/round.js";\n'
+  + 'import { accountOf, handleAccount } from "./profiles.js";';
+if (!worker.startsWith(workerImports) || !profiles.startsWith(profileImport)) {
+  throw new Error("Missing shared module imports in Worker source.");
+}
 const destination = new URL("dist/server/", root);
 await mkdir(destination, { recursive: true });
 await writeFile(new URL("index.js", destination),
-  `${rules}\n${worker.slice(importLine.length)}\nexport default createWorker(${JSON.stringify(assets)});\n`);
+  `${rules}\n${profiles.slice(profileImport.length)}\n${worker.slice(workerImports.length)}\nexport default createWorker(${JSON.stringify(assets)});\n`);

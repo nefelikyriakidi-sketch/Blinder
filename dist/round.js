@@ -27,13 +27,13 @@ export function shuffle(ids) {
   return result;
 }
 
-export function member(id, name, tokenHash) {
-  return { id, name, tokenHash, paused: false, votes: {}, favorite: null, agreed: false };
+export function member(id, name, tokenHash, accountId) {
+  return { id, name, tokenHash, accountId, paused: false, votes: {}, favorite: null, agreed: false };
 }
 
 export function createRound(host, outing = "any") {
   return {
-    host: host.id, members: [host], outing, phase: "lobby", order: [],
+    host: host.id, members: [host], title: "", outing, phase: "lobby", order: [],
     shortlist: [], rejected: [], proposal: null, notice: "", extended: false,
     messages: [], activity: [],
   };
@@ -112,6 +112,13 @@ export function applyAction(round, person, action) {
   }
   if (!host) throw new RoundError("The host controls the round.", 403);
   switch (action.type) {
+    case "rename": {
+      if (round.phase !== "lobby") throw new RoundError("Rename the room from the lobby.");
+      const title = typeof action.title === "string" ? action.title.trim().replace(/\s+/g, " ") : "";
+      if (!title || title.length > 48) throw new RoundError("Enter a room name up to 48 characters.", 400);
+      round.title = title;
+      break;
+    }
     case "start":
       if (round.phase !== "lobby" || round.members.length < 2) {
         throw new RoundError("Invite at least one friend to start.");
@@ -146,7 +153,8 @@ export function applyAction(round, person, action) {
     case "restart":
       if (!["done", "empty"].includes(round.phase)) throw new RoundError("This round is still open.");
       Object.assign(round, createRound(round.members[0], round.outing), {
-        members: round.members.map(({ id, name, tokenHash }) => member(id, name, tokenHash)),
+        members: round.members.map(({ id, name, tokenHash, accountId }) => member(id, name, tokenHash, accountId)),
+        title: round.title ?? "",
         activity: round.activity ?? [],
         messages: round.messages ?? [],
       });
@@ -161,6 +169,7 @@ export function viewOf(round, person, code, revision) {
   const active = voters(round);
   return {
     code, revision, phase: round.phase, host: round.host === person.id, outing: round.outing ?? "any",
+    title: round.title ?? "",
     name: person.name, paused: person.paused,
     people: round.members.map(({ id, name, paused }) => ({ id, name, paused })),
     active: active.length,

@@ -10,6 +10,10 @@ The sample deck uses fictional places and illustrative food photos. Real venue l
 
 Open **Room** for group chat and in-app activity. **Rejoin room** on the homepage opens the most recent active room on that browser. Room chat and activity expire with the room.
 
+In the lobby, choose **Name room** and share the invite link. The host can start swiping as soon as another participant joins.
+
+Choose **Friends** and sign in with ChatGPT to set a Blinder username. After a friend accepts your request, **Invite friends** in a room lobby sends them an in-app invite. Blinder stores your chosen username and a site-specific sign-in ID so friends and invites follow you across devices.
+
 On iPhone, use Safari’s Share menu and choose **Add to Home Screen**. On Android, use Chrome’s **Install app** or **Add to home screen**. The app and solo demo can reopen offline after the first online visit.
 
 ## Develop locally
