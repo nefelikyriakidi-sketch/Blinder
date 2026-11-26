@@ -1,17 +1,23 @@
 # Blinder
 
-Blinder is a proof-of-concept PWA built with plain HTML, CSS, and JavaScript. The current shell lets you check installation and offline access in a browser.
+Blinder is a phone-first PWA for friends deciding where to go. Everyone votes privately and can move their one favorite as they swipe. The suggested group pick needs a second private confirmation before it is final.
 
 ## Try it
 
-Open the [ChatGPT Sites preview](https://blinder.clevergoldfinch32.chatgpt.site/) on a phone or desktop. On iPhone, use Safari’s Share menu and choose **Add to Home Screen**. On Android, use Chrome’s **Install app** or **Add to home screen** action. After **Offline access** shows **Ready**, disconnect and reopen Blinder to test the cached shell.
+Open [Blinder](https://blinder.clevergoldfinch32.chatgpt.site/) and choose **Try a solo demo** to practice swiping with simulated friends. To test together, choose **Create a room**, share its invite link, and start when your friends join. Shared rounds need an internet connection. Room links expire after 24 hours.
+
+The sample deck uses fictional places and illustrative food photos. Real venue links can be added to the deck for directions and booking.
+
+On iPhone, use Safari’s Share menu and choose **Add to Home Screen**. On Android, use Chrome’s **Install app** or **Add to home screen**. The app and solo demo can reopen offline after the first online visit.
 
 ## Develop locally
 
-From the repository root, run:
+Run the preview with Node.js 24 or later.
 
 ```sh
-python3 -m http.server 8000 --bind 127.0.0.1 --directory dist
+node worker/dev.mjs
 ```
 
-Open [localhost:8000](http://localhost:8000/). Edit the static app directly in `dist/`. GitHub holds the source and commit history. ChatGPT Sites serves the app over HTTPS using the project in `.openai/hosting.json`.
+Open [localhost:8093](http://localhost:8093/). The preview database resets when the process stops.
+
+Edit the browser app under `dist/` and live room handling under `worker/`. Run `node worker/build.mjs` to create the Worker for ChatGPT Sites. GitHub holds the source and commit history.

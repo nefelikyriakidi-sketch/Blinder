@@ -83,12 +83,19 @@ When the user requests a durable behavior change, record it here or in the relev
 - Keep the Blinder proof of concept framework-free. Use plain HTML, CSS, and JavaScript. Add focused libraries only when they are needed.
 - Keep the PWA usable in a desktop browser and installable on phones.
 
+## Project Status
+
+- Blinder helps friends agree where to eat or drink. The proof of concept covers one shared round with private venue votes, one movable favorite, ranked unanimous matches, and private final confirmation.
+- The prototype uses fictional venues and illustrative photos. Validate the flow on phones before curating real venues or integrating live venue data.
+
 ## Blinder PWA
 
 - Use the Blinder GitHub repository for source and commit history. ChatGPT Sites hosts the public HTTPS preview using the project in `.openai/hosting.json`.
-- The PWA is buildless. Edit its source under `dist/` and publish those files with the existing Sites project.
+- Edit the framework-free PWA under `dist/`. The Worker under `worker/` serves the app and handles live rooms with D1.
 - See `README.md` for local and phone testing.
 
 ## Child DOX Index
 
 - [dist/AGENTS.md](dist/AGENTS.md) covers the PWA source, offline behavior, and browser verification.
+- [worker/AGENTS.md](worker/AGENTS.md) covers live rooms and Sites packaging.
+- [drizzle/AGENTS.md](drizzle/AGENTS.md) covers room storage migrations.

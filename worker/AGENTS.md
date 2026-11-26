@@ -1,0 +1,23 @@
+# Live room Worker
+
+## Purpose
+
+Serve the Blinder PWA and synchronize shared rounds across browsers.
+
+## Ownership
+
+- `index.js` validates room requests, authenticates individual participants by bearer key, and stores state in D1.
+- `build.mjs` bundles the browser assets and shared round rules into the Sites Worker.
+- `dev.mjs` runs the same Worker locally with an in-memory SQLite database.
+
+## Local Contracts
+
+- Use the room revision when writing to keep simultaneous votes consistent.
+- Return only the caller's private selections and group-level outcomes. Keep room keys out of invite links and API responses for other participants.
+- Room links expire 24 hours after creation. Apply storage changes via `../drizzle/`.
+- Publish build output to the existing Sites project. Keep authored code in the GitHub repository.
+
+## Verification
+
+- Run `node worker/build.mjs` from the repository root and check the generated Worker.
+- Verify a host and two guests can finish the same round without exposing individual votes.

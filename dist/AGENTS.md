@@ -2,20 +2,24 @@
 
 ## Purpose
 
-This folder contains the framework-free PWA and provides the static files served by ChatGPT Sites.
+This folder contains the framework-free browser interface and the sample venue deck.
 
 ## Ownership
 
-- `index.html`, `styles.css`, and `app.js` handle the interface, installation controls, and browser status.
-- `manifest.webmanifest` and the PNG icons define how browsers install and launch the app.
-- `sw.js` caches the app shell for offline use.
+- `index.html`, `styles.css`, and `app.js` own the layout, gestures, room interface, and solo demo.
+- `round.js` defines room transitions and the private view returned to each participant. The Worker packages the same module.
+- `venues.js` and `venue-photos.jpg` contain fictional venues and an illustrative photo grid.
+- `manifest.webmanifest`, the icons, and `sw.js` provide installation and offline access to the app and solo demo.
 
 ## Local Contracts
 
-- Edit the source files here directly. Sites serves this directory without a build step.
-- Keep asset and service-worker URLs relative. Update the precache list and increment the cache version when cached files change. Scope cache deletion to this app.
-- Serve only files intended for site visitors from this directory.
+- Keep Pass and Like available by button and horizontal swipe. Favorite also Likes the current card and replaces the previous favorite.
+- Show the same group recommendation to all participants. Keeping other matches open for browsing leaves the current confirmation intact.
+- Use text nodes for nicknames and room content. Use venue links for directions and booking when real links are available.
+- Keep asset and service-worker URLs relative. Update the precache list and increment the cache version when cached files change. Keep live room responses out of the cache.
+- Treat `server/` as generated Worker output.
 
 ## Verification
 
-- Check a browser load, service-worker control, and offline reopening. Check the install controls at a phone-sized viewport.
+- Check the solo demo and installability at a phone-sized viewport.
+- Verify a moveable favorite, anonymous rejection, offline reopening, and a shared round across three independent browser sessions.
