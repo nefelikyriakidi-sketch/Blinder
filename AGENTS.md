@@ -85,7 +85,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Blinder PWA
 
-- Use the Blinder GitHub repository for source and commit history. ChatGPT Sites hosts the HTTPS preview using the project in `.openai/hosting.json`.
+- Use the Blinder GitHub repository for source and commit history. ChatGPT Sites hosts the public HTTPS preview using the project in `.openai/hosting.json`.
 - The PWA is buildless. Edit its source under `dist/` and publish those files with the existing Sites project.
 - See `README.md` for local and phone testing.
 

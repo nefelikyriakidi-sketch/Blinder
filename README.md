@@ -4,7 +4,7 @@ Blinder is a proof-of-concept PWA built with plain HTML, CSS, and JavaScript. Th
 
 ## Try it
 
-Open the [ChatGPT Sites preview](https://blinder.clevergoldfinch32.chatgpt.site/) on a phone or desktop and sign in to ChatGPT if prompted. On iPhone, use Safari’s Share menu and choose **Add to Home Screen**. On Android, use Chrome’s **Install app** or **Add to home screen** action. After **Offline access** shows **Ready**, disconnect and reopen Blinder to test the cached shell.
+Open the [ChatGPT Sites preview](https://blinder.clevergoldfinch32.chatgpt.site/) on a phone or desktop. On iPhone, use Safari’s Share menu and choose **Add to Home Screen**. On Android, use Chrome’s **Install app** or **Add to home screen** action. After **Offline access** shows **Ready**, disconnect and reopen Blinder to test the cached shell.
 
 ## Develop locally
 

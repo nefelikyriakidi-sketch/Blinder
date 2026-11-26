@@ -1,9 +1,9 @@
 const cachePrefix = `blinder-shell:${self.registration.scope}:`;
-const cacheName = `${cachePrefix}v1`;
+const cacheName = `${cachePrefix}v2`;
 const home = new URL("./", self.registration.scope).href;
 const index = new URL("./index.html", home).href;
 const shell = [
-  index,
+  home,
   new URL("./styles.css", home).href,
   new URL("./app.js", home).href,
   new URL("./manifest.webmanifest", home).href,
@@ -42,6 +42,6 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith((async () => {
     const cache = await caches.open(cacheName);
-    return (await cache.match(appHome ? index : request)) ?? fetch(request);
+    return (await cache.match(appHome ? home : request)) ?? fetch(request);
   })());
 });
