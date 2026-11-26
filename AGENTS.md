@@ -1,5 +1,7 @@
 # DOX framework
 
+This guide comes from [Agent Zero’s DOX project](https://github.com/agent0ai/dox). See [LICENSE-DOX](LICENSE-DOX) for its MIT notice.
+
 - DOX is highly performant AGENTS.md hierarchy installed here
 - Agent must follow DOX instructions across any edits
 
