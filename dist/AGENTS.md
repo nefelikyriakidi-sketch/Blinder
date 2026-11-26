@@ -17,6 +17,7 @@ This folder contains the framework-free browser interface and the sample venue d
 - The host sets Anything, Coffee, Brunch, Lunch, Dinner, or Drinks when creating a room. Filter both the opening deck and any added cards by that outing.
 - Use the original overlapping photo cards on the homepage. The intro names brunch, lunch, dinner, and drinks and explains that friends swipe to agree where to go.
 - Show the same group recommendation to all participants. Keeping other matches open for browsing leaves the current confirmation intact.
+- Put chat, activity, and unread counts in the room menu. Let returning participants rejoin their most recent room from the same browser.
 - Use text nodes for nicknames and room content. Use venue links for directions and booking when real links are available.
 - Keep asset and service-worker URLs relative. Update the precache list and increment the cache version when cached files change. Keep live room responses out of the cache.
 - Treat `server/` as generated Worker output.

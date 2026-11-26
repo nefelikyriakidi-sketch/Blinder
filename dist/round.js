@@ -35,22 +35,34 @@ export function createRound(host, outing = "any") {
   return {
     host: host.id, members: [host], outing, phase: "lobby", order: [],
     shortlist: [], rejected: [], proposal: null, notice: "", extended: false,
+    messages: [], activity: [],
   };
 }
 
 const voters = (round) => round.members.filter((person) => !person.paused);
 const finished = (round, person) => round.order.every((id) => Object.hasOwn(person.votes, id));
 
+function appendTo(list, item) {
+  list.push({ id: (list.at(-1)?.id ?? 0) + 1, time: Date.now(), ...item });
+  if (list.length > 50) list.shift();
+}
+
+export function recordActivity(round, text) {
+  appendTo(round.activity ??= [], { text });
+}
+
 function advanceProposal(round) {
   for (const person of round.members) person.agreed = false;
   round.proposal = round.shortlist[0] ?? null;
   round.phase = round.proposal === null ? "empty" : "confirm";
+  if (round.phase === "confirm") recordActivity(round, "A group pick is ready to confirm.");
 }
 
 function settle(round) {
   const active = voters(round);
   if (round.phase === "confirm" && active.every((person) => person.agreed)) {
     round.phase = "done";
+    recordActivity(round, "The group agreed on a place.");
   }
   if (round.phase !== "swipe" || !active.every((person) => finished(round, person))) return;
 
@@ -63,6 +75,12 @@ function settle(round) {
 
 export function applyAction(round, person, action) {
   const host = person.id === round.host;
+  if (action.type === "message") {
+    const text = typeof action.text === "string" ? action.text.trim() : "";
+    if (!text || text.length > 300) throw new RoundError("Enter a message up to 300 characters.", 400);
+    appendTo(round.messages ??= [], { text, sender: person.name, memberId: person.id });
+    return;
+  }
   if (action.type === "vote") {
     if (round.phase !== "swipe" || person.paused) throw new RoundError("Voting has closed.");
     const next = round.order.find((id) => !Object.hasOwn(person.votes, id));
@@ -85,6 +103,7 @@ export function applyAction(round, person, action) {
       round.rejected.push(round.proposal);
       round.shortlist.shift();
       round.notice = "Someone changed their mind.";
+      recordActivity(round, round.notice);
       advanceProposal(round);
     } else {
       throw new RoundError("Choose Agree or I changed my mind.", 400);
@@ -99,6 +118,7 @@ export function applyAction(round, person, action) {
       }
       round.order = shuffle(deckFor(round.outing)).slice(0, 12);
       round.phase = "swipe";
+      recordActivity(round, "Swiping is open.");
       break;
     case "pause": {
       if (!["swipe", "confirm"].includes(round.phase) || voters(round).length <= 2) {
@@ -127,7 +147,10 @@ export function applyAction(round, person, action) {
       if (!["done", "empty"].includes(round.phase)) throw new RoundError("This round is still open.");
       Object.assign(round, createRound(round.members[0], round.outing), {
         members: round.members.map(({ id, name, tokenHash }) => member(id, name, tokenHash)),
+        activity: round.activity ?? [],
+        messages: round.messages ?? [],
       });
+      recordActivity(round, "The host opened another round.");
       break;
     default:
       throw new RoundError("Unknown round action.", 400);
@@ -147,5 +170,7 @@ export function viewOf(round, person, code, revision) {
     favorite: person.favorite, agreed: person.agreed, proposal: round.proposal,
     matches: round.shortlist.slice(0, 3), notice: round.notice,
     canExtend: !round.extended && available(round).length > 0,
+    activity: round.activity ?? [],
+    messages: (round.messages ?? []).map(({ memberId, ...message }) => ({ ...message, mine: memberId === person.id })),
   };
 }

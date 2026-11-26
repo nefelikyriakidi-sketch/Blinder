@@ -31,7 +31,7 @@ body {
   padding: max(1rem, env(safe-area-inset-top)) 1.25rem max(2rem, env(safe-area-inset-bottom));
 }
 
-.top { display: flex; align-items: center; gap: .75rem; min-height: 48px; margin-bottom: 1rem; }
+.top { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; min-height: 48px; margin-bottom: 1rem; }
 .wordmark { display: inline-flex; gap: .5rem; align-items: center; text-decoration: none; color: var(--brand); font-weight: 850; font-size: 1.4rem; letter-spacing: -.07em; margin-right: auto; }
 .logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 13px; background: var(--brand); color: #fff9f3; font: italic 700 1.5rem Georgia, serif; }
 h1, h2, p { margin: 0; }
@@ -89,6 +89,18 @@ input::placeholder { color: #8b7580; }
 .home .primary, .home .secondary { margin-top: .35rem; }
 .home .secondary { margin-top: .65rem; }
 .text-button { padding: .5rem .7rem; }
+.unread-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  min-height: 1.15rem;
+  margin-left: .3rem;
+  padding: 0 .22rem;
+  border-radius: 999px;
+  background: var(--brand);
+  color: white;
+  font-size: .72rem;
+}
 .close { padding: .3rem .75rem; background: #f6ecea; font-size: 1.25rem; }
 
 .panel {
@@ -149,6 +161,23 @@ dialog { width: min(100% - 1.2rem, 29rem); min-height: 12rem; max-height: 85svh;
 dialog::backdrop { background: #27141a77; backdrop-filter: blur(3px); }
 .sheet-top { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin-bottom: .85rem; }
 #sheet-body { display: grid; gap: .8rem; }
+.room-feed-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.room-feed {
+  display: grid;
+  gap: .45rem;
+  max-height: 42svh;
+  margin: 0;
+  padding: .2rem;
+  overflow: auto;
+  list-style: none;
+}
+.room-feed li { padding: .55rem .7rem; border-radius: .8rem; background: #f8eeeb; overflow-wrap: anywhere; }
+.room-feed strong { color: var(--brand); font-size: .8rem; }
+.room-feed .own-message { background: var(--pink); }
+.room-feed p { color: var(--ink); }
+.chat-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem; }
+.chat-form .chat-status { grid-column: 1 / -1; font-size: .85rem; }
+.chat-status:empty { display: none; }
 #sheet-body .photo { border-radius: 1rem; }
 #sheet-body .links { display: flex; flex-wrap: wrap; gap: .5rem; }
 .links a { background: #f5e7e4; border-radius: .6rem; padding: .45rem .7rem; }

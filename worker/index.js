@@ -1,4 +1,4 @@
-import { RoundError, applyAction, createRound, member, outingLabels, viewOf } from "../dist/round.js";
+import { RoundError, applyAction, createRound, member, outingLabels, recordActivity, viewOf } from "../dist/round.js";
 
 const ROOM_LIFETIME = 24 * 60 * 60 * 1000;
 const MAX_MEMBERS = 12;
@@ -99,6 +99,7 @@ async function handleApi(request, db, context) {
       if (room.members.length >= MAX_MEMBERS) throw new RoundError("This room is full.");
       person = invite.person;
       room.members.push(person);
+      recordActivity(room, `${person.name} joined the room.`);
     } else {
       person = room.members.find((candidate) => candidate.tokenHash === tokenHash);
       if (!person) throw new RoundError("Join this room to continue.", 401);

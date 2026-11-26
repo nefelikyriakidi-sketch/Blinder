@@ -8,6 +8,8 @@ Open [Blinder](https://blinder.clevergoldfinch32.chatgpt.site/) and choose **Try
 
 The sample deck uses fictional places and illustrative food photos. Real venue links can be added to the deck for directions and booking.
 
+Open **Room** for group chat and in-app activity. **Rejoin room** on the homepage opens the most recent active room on that browser. Room chat and activity expire with the room.
+
 On iPhone, use Safari’s Share menu and choose **Add to Home Screen**. On Android, use Chrome’s **Install app** or **Add to home screen**. The app and solo demo can reopen offline after the first online visit.
 
 ## Develop locally

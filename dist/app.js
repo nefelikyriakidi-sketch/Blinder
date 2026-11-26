@@ -3,6 +3,7 @@ import { venues } from "./venues.js";
 
 const screen = document.querySelector("#screen");
 const menuButton = document.querySelector("#room-menu");
+const rejoinButton = document.querySelector("#rejoin-room");
 const outingChip = document.querySelector("#outing-chip");
 const sheet = document.querySelector("#sheet");
 const sheetTitle = document.querySelector("#sheet-title");
@@ -12,6 +13,7 @@ const installButton = document.querySelector("#install");
 const requested = new URL(location.href).searchParams.get("room");
 const roomCode = /^[a-f0-9]{12}$/.test(requested ?? "") ? requested : null;
 const keyName = (code) => `blinder-room:${code}`;
+const lastRoomKey = "blinder:last-room";
 let key = roomCode ? localStorage.getItem(keyName(roomCode)) : null;
 let view;
 let demo;
@@ -19,6 +21,7 @@ let busy = false;
 let polling = false;
 let toastTimer;
 let installPrompt;
+let sheetMode;
 
 const element = (tag, text, className) => {
   const node = document.createElement(tag);
@@ -41,9 +44,9 @@ function tell(message) {
   toastTimer = setTimeout(() => { toast.hidden = true; }, 2800);
 }
 
-function inviteLink() {
+function inviteLink(code = view.code) {
   const url = new URL("./", location.href);
-  url.searchParams.set("room", view.code);
+  url.searchParams.set("room", code);
   return url.href;
 }
 
@@ -62,10 +65,92 @@ async function copyLink() {
   }
 }
 
-function openSheet(title, content) {
+function openSheet(title, content, mode) {
+  sheetMode = mode;
   sheetTitle.textContent = title;
   sheetBody.replaceChildren(...content);
   if (!sheet.open) sheet.showModal();
+}
+
+const feedKey = (feed) => `blinder-read:${view.code}:${feed}`;
+const feedItems = (feed) => view?.[feed] ?? [];
+const unread = (feed) => feedItems(feed).filter((entry) =>
+  !entry.mine && entry.id > Number(localStorage.getItem(feedKey(feed)) ?? 0)).length;
+
+function refreshRoomMenu() {
+  menuButton.hidden = !view || Boolean(demo);
+  if (!view || demo) return;
+  const count = unread("messages") + unread("activity");
+  const label = `Room · ${view.people.length}`;
+  menuButton.replaceChildren(label);
+  menuButton.setAttribute("aria-label", count ? `${label}, ${count} unread updates` : label);
+  if (count) menuButton.append(element("span", String(count), "unread-count"));
+  if (sheetMode === "room" && sheet.open) {
+    for (const control of sheetBody.querySelectorAll("[data-feed]")) {
+      const unseen = unread(control.dataset.feed);
+      control.textContent = unseen ? `${control.dataset.label} · ${unseen}` : control.dataset.label;
+    }
+  }
+}
+
+function refreshFeed() {
+  if (!sheet.open || !["messages", "activity"].includes(sheetMode)) return;
+  const list = sheetBody.querySelector(".room-feed");
+  const entries = feedItems(sheetMode);
+  const latest = entries.at(-1)?.id ?? 0;
+  if (list.dataset.latest === String(latest)) return;
+  list.dataset.latest = latest;
+  const chat = sheetMode === "messages";
+  const rows = chat ? entries : [...entries].reverse();
+  list.replaceChildren(...rows.map((entry) => {
+    const item = element("li", undefined, chat && entry.mine ? "own-message" : "");
+    if (chat) item.append(element("strong", entry.mine ? "You" : entry.sender));
+    item.append(element("p", entry.text));
+    return item;
+  }));
+  if (!rows.length) list.append(element("li", chat ? "Say hi to your group." : "No updates yet."));
+  if (chat) list.scrollTop = list.scrollHeight;
+  localStorage.setItem(feedKey(sheetMode), String(latest));
+  refreshRoomMenu();
+}
+
+function openActivity() {
+  const list = element("ul", undefined, "room-feed");
+  openSheet("Activity", [list, button("Back to room", roomMenu, "text-button")], "activity");
+  refreshFeed();
+}
+
+function openChat() {
+  const list = element("ul", undefined, "room-feed chat-feed");
+  list.setAttribute("role", "log");
+  list.setAttribute("aria-label", "Room messages");
+  const form = element("form", undefined, "chat-form");
+  const input = element("input");
+  input.name = "message";
+  input.autocomplete = "off";
+  input.placeholder = "Message your group";
+  input.maxLength = 300;
+  input.required = true;
+  input.setAttribute("aria-label", "Message your group");
+  const send = element("button", "Send", "primary");
+  send.type = "submit";
+  const status = element("p", "", "chat-status");
+  status.setAttribute("role", "status");
+  form.append(input, send, status);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const text = input.value.trim();
+    if (!text || send.disabled) return;
+    send.disabled = true;
+    status.textContent = "";
+    const sent = await act({ type: "message", text });
+    if (sent && input.value.trim() === text) input.value = "";
+    if (!sent) status.textContent = "Message couldn’t be sent. Try again.";
+    send.disabled = false;
+    input.focus();
+  });
+  openSheet("Room chat", [list, form, button("Back to room", roomMenu, "text-button")], "messages");
+  refreshFeed();
 }
 
 function links(place, names) {
@@ -177,7 +262,14 @@ function peopleList(administrative = false) {
 }
 
 function roomMenu() {
-  const options = [peopleList(view.host)];
+  const feeds = element("div", undefined, "room-feed-actions");
+  for (const [feed, label, open] of [["messages", "Chat", openChat], ["activity", "Activity", openActivity]]) {
+    const control = button(label, open, "secondary");
+    control.dataset.feed = feed;
+    control.dataset.label = label;
+    feeds.append(control);
+  }
+  const options = [feeds, peopleList(view.host)];
   if (view.phase === "lobby") options.unshift(button("Copy invite link", copyLink));
   if (view.host && view.phase === "confirm" && view.canExtend) {
     options.push(button("Add more sample places", () => {
@@ -185,7 +277,8 @@ function roomMenu() {
       act({ type: "extend" });
     }, "secondary"));
   }
-  openSheet("Group room", options);
+  openSheet("Group room", options, "room");
+  refreshRoomMenu();
 }
 
 function showMatches(current) {
@@ -202,7 +295,10 @@ function showMatches(current) {
 }
 
 function render() {
-  menuButton.hidden = !view || Boolean(demo);
+  refreshRoomMenu();
+  const lastRoom = localStorage.getItem(lastRoomKey);
+  rejoinButton.hidden = Boolean(view || roomCode) || !lastRoom || !localStorage.getItem(keyName(lastRoom));
+  if (!rejoinButton.hidden) rejoinButton.href = inviteLink(lastRoom);
   outingChip.hidden = !view;
   outingChip.textContent = view ? outingLabels[view.outing] : "";
   screen.replaceChildren();
@@ -305,10 +401,22 @@ async function request(path, options = {}) {
 
 function update(next) {
   if (view && next.revision <= view.revision) return;
-  const changed = view && (next.phase !== view.phase || next.proposal !== view.proposal);
+  const previous = view;
+  const changed = previous && (next.phase !== previous.phase || next.proposal !== previous.proposal);
   view = next;
-  if (changed && sheet.open) sheet.close();
-  render();
+  if (changed && sheet.open && !["messages", "activity"].includes(sheetMode)) sheet.close();
+  const scene = ({ revision, activity, messages, ...visible }) => JSON.stringify(visible);
+  if (!previous || scene(previous) !== scene(next)) render();
+  refreshFeed();
+  refreshRoomMenu();
+  if (!previous || demo || sheet.open) return;
+  const message = next.messages?.at(-1);
+  const activity = next.activity?.at(-1);
+  if (message && !message.mine && message.id > (previous.messages?.at(-1)?.id ?? 0)) {
+    tell(`${message.sender} sent a message.`);
+  } else if (activity && activity.id > (previous.activity?.at(-1)?.id ?? 0)) {
+    tell(activity.text);
+  }
 }
 
 async function join(event) {
@@ -327,6 +435,7 @@ async function join(event) {
     });
     key = newKey;
     localStorage.setItem(keyName(next.code), key);
+    localStorage.setItem(lastRoomKey, next.code);
     update(next);
     history.replaceState(null, "", inviteLink());
     screen.focus();
@@ -360,7 +469,7 @@ function startDemo() {
 const restart = () => demo ? startDemo() : act({ type: "restart" });
 
 async function act(action) {
-  if (busy) return;
+  if (busy) return false;
   busy = true;
   const subject = action.type === "vote" && action.choice === "favorite" ? venues[action.place] : null;
   const previousFavorite = view.favorite;
@@ -379,8 +488,10 @@ async function act(action) {
     }
     update(next);
     if (subject) tell(previousFavorite === null ? `Favorite set to ${subject.name}` : `Favorite moved to ${subject.name}`);
+    return true;
   } catch (error) {
     tell(error.status ? error.message : "Could not save your action. Try again.");
+    return false;
   } finally {
     busy = false;
   }
@@ -392,12 +503,16 @@ async function refresh() {
   if (!code) return;
   polling = true;
   try {
-    update((await request(`./api/rooms/${code}`)).view);
+    const { view: next } = await request(`./api/rooms/${code}`);
+    localStorage.setItem(lastRoomKey, code);
+    update(next);
   } catch (error) {
     if (error.status === 401 || error.status === 404) {
       localStorage.removeItem(keyName(code));
+      if (localStorage.getItem(lastRoomKey) === code) localStorage.removeItem(lastRoomKey);
       key = null;
       view = undefined;
+      if (sheet.open) sheet.close();
       render();
       tell(error.message);
     }
