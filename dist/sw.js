@@ -1,5 +1,5 @@
 const cachePrefix = `blinder-shell:${self.registration.scope}:`;
-const cacheName = `${cachePrefix}v3`;
+const cacheName = `${cachePrefix}v4`;
 const home = new URL("./", self.registration.scope).href;
 const index = new URL("./index.html", home).href;
 const shell = [
@@ -9,6 +9,7 @@ const shell = [
   new URL("./round.js", home).href,
   new URL("./venues.js", home).href,
   new URL("./venue-photos.jpg", home).href,
+  new URL("./outing-photos.jpg", home).href,
   new URL("./manifest.webmanifest", home).href,
   new URL("./icon-192.png", home).href,
   new URL("./icon-512.png", home).href,

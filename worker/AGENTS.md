@@ -13,6 +13,7 @@ Serve the Blinder PWA and synchronize shared rounds across browsers.
 ## Local Contracts
 
 - Use the room revision when writing to keep simultaneous votes consistent.
+- Validate the host’s outing when creating a room. Rooms created before outing selection use the mixed deck.
 - Return only the caller's private selections and group-level outcomes. Keep room keys out of invite links and API responses for other participants.
 - Room links expire 24 hours after creation. Apply storage changes via `../drizzle/`.
 - Publish build output to the existing Sites project. Keep authored code in the GitHub repository.

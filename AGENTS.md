@@ -85,7 +85,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Project Status
 
-- Blinder helps friends agree where to eat or drink. The proof of concept covers one shared round with private venue votes, one movable favorite, ranked unanimous matches, and private final confirmation.
+- Blinder helps friends agree where to go. The host chooses the outing, and the group sees a matching deck for private swipes, one movable favorite, ranked unanimous matches, and private final confirmation.
 - The prototype uses fictional venues and illustrative photos. Validate the flow on phones before curating real venues or integrating live venue data.
 
 ## Blinder PWA

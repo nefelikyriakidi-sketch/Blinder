@@ -1,8 +1,9 @@
-import { applyAction, createRound, extraDeck, member, openingDeck, viewOf } from "./round.js";
+import { applyAction, createRound, deckFor, member, outingLabels, viewOf } from "./round.js";
 import { venues } from "./venues.js";
 
 const screen = document.querySelector("#screen");
 const menuButton = document.querySelector("#room-menu");
+const outingChip = document.querySelector("#outing-chip");
 const sheet = document.querySelector("#sheet");
 const sheetTitle = document.querySelector("#sheet-title");
 const sheetBody = document.querySelector("#sheet-body");
@@ -80,8 +81,10 @@ function links(place, names) {
 
 function photoOf(place, className = "") {
   const photo = element("div", undefined, `photo ${className}`);
-  photo.style.setProperty("--x", `${(place.photo % 3) * 50}%`);
-  photo.style.setProperty("--y", `${Math.floor(place.photo / 3) * 100 / 3}%`);
+  const tile = place.photo % 12;
+  if (place.photo >= 12) photo.classList.add("outing-photo");
+  photo.style.setProperty("--x", `${(tile % 3) * 50}%`);
+  photo.style.setProperty("--y", `${Math.floor(tile / 3) * 100 / 3}%`);
   photo.setAttribute("aria-hidden", "true");
   return photo;
 }
@@ -177,12 +180,12 @@ function roomMenu() {
   const options = [peopleList(view.host)];
   if (view.phase === "lobby") options.unshift(button("Copy invite link", copyLink));
   if (view.host && view.phase === "confirm" && view.canExtend) {
-    options.push(button("Add six sample places", () => {
+    options.push(button("Add more sample places", () => {
       sheet.close();
       act({ type: "extend" });
     }, "secondary"));
   }
-  openSheet("Dinner room", options);
+  openSheet("Group room", options);
 }
 
 function showMatches(current) {
@@ -200,13 +203,19 @@ function showMatches(current) {
 
 function render() {
   menuButton.hidden = !view || Boolean(demo);
+  outingChip.hidden = !view;
+  outingChip.textContent = view ? outingLabels[view.outing] : "";
   screen.replaceChildren();
   if (!view) {
     screen.append(document.querySelector("#home").content.cloneNode(true));
     installButton.hidden = !installPrompt;
+    const outing = screen.querySelector("#outing");
+    for (const [value, label] of Object.entries(outingLabels)) outing.add(new Option(label, value));
     if (roomCode) {
-      screen.querySelector("h1").textContent = "Join dinner.";
+      screen.querySelector("h1").textContent = "Join your friends.";
       screen.querySelector("#join-submit").textContent = "Join the room →";
+      screen.querySelector("#outing-field").hidden = true;
+      screen.querySelector(".form-fields").classList.add("joining");
     }
     screen.querySelector("#join-form").addEventListener("submit", join);
     screen.querySelector("#try-demo").addEventListener("click", startDemo);
@@ -215,7 +224,7 @@ function render() {
   installButton.hidden = true;
 
   if (view.phase === "lobby") {
-    screen.append(panel("Dinner room", [
+    screen.append(panel("Group room", [
       element("p", "Share the link. Start when everyone is here."),
       peopleList(),
       button("Copy invite link", copyLink),
@@ -253,9 +262,9 @@ function render() {
 
   if (view.phase === "empty") {
     screen.append(panel("No match this round", [
-      element("p", view.canExtend ? "You can look through six more sample places." : "Start another round whenever you’re ready."),
+      element("p", view.canExtend ? "You can look through more sample places." : "Start another round whenever you’re ready."),
       ...(view.host ? [view.canExtend
-        ? button("Add six sample places", () => act({ type: "extend" }))
+        ? button("Add more sample places", () => act({ type: "extend" }))
         : button("Start another round", restart)] : [element("p", "Waiting for the host.")]),
     ]));
     return;
@@ -309,10 +318,12 @@ async function join(event) {
   const form = event.currentTarget;
   const submit = form.querySelector("button");
   submit.disabled = true;
-  const name = new FormData(form).get("name");
+  const data = new FormData(form);
+  const name = data.get("name");
+  const outing = data.get("outing");
   try {
     const { key: newKey, view: next } = await request(roomCode ? `./api/rooms/${roomCode}` : "./api/rooms", {
-      method: "POST", body: JSON.stringify({ type: "join", name }),
+      method: "POST", body: JSON.stringify(roomCode ? { type: "join", name } : { name, outing }),
     });
     key = newKey;
     localStorage.setItem(keyName(next.code), key);
@@ -329,14 +340,16 @@ async function join(event) {
 
 function startDemo() {
   const host = member("solo", "You");
-  const room = createRound(host);
+  const outing = demo?.room.outing ?? screen.querySelector("#outing")?.value ?? "any";
+  const deck = deckFor(outing);
+  const room = createRound(host, outing);
   room.members.push(member("friend-1", "Sam"), member("friend-2", "Jo"));
   applyAction(room, host, { type: "start" });
-  room.order = [...openingDeck];
-  const liked = [0, 1, 2, 3, 6, 8, 10, 12, 14, 16];
+  room.order = deck.slice(0, 12);
+  const liked = new Set(deck.filter((_, index) => index % 4 !== 3));
   for (const [index, friend] of room.members.slice(1).entries()) {
-    friend.votes = Object.fromEntries([...openingDeck, ...extraDeck].map((id) => [id, liked.includes(id) ? "like" : "pass"]));
-    friend.favorite = index === 0 ? 0 : 2;
+    friend.votes = Object.fromEntries(deck.map((id) => [id, liked.has(id) ? "like" : "pass"]));
+    friend.favorite = deck[index * 2];
   }
   demo = { room, host };
   view = viewOf(room, host, "demo", 0);

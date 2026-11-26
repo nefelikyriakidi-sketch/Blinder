@@ -4,7 +4,7 @@ Blinder is a phone-first PWA for friends deciding where to go. Everyone votes pr
 
 ## Try it
 
-Open [Blinder](https://blinder.clevergoldfinch32.chatgpt.site/) and choose **Try a solo demo** to practice swiping with simulated friends. To test together, choose **Create a room**, share its invite link, and start when your friends join. Shared rounds need an internet connection. Room links expire after 24 hours.
+Open [Blinder](https://blinder.clevergoldfinch32.chatgpt.site/) and choose **Try a solo demo** to practice swiping with simulated friends. To test together, choose **Anything**, **Brunch**, **Dinner**, or **Drinks**, create a room, and share its invite link. The outing controls which sample places everyone sees. Shared rounds need an internet connection. Room links expire after 24 hours.
 
 The sample deck uses fictional places and illustrative food photos. Real venue links can be added to the deck for directions and booking.
 

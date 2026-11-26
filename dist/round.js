@@ -1,5 +1,12 @@
-export const openingDeck = Array.from({ length: 12 }, (_, id) => id);
-export const extraDeck = Array.from({ length: 6 }, (_, id) => 12 + id);
+export const outingLabels = { any: "Anything", brunch: "Brunch", dinner: "Dinner", drinks: "Drinks" };
+const decks = {
+  any: [0, 1, 2, 18, 11, 3, 24, 4, 19, 5, 25, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 20, 21, 22, 23, 26, 27, 28, 29],
+  brunch: [18, 19, 20, 21, 22, 23],
+  dinner: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16],
+  drinks: [11, 24, 25, 26, 27, 28, 29, 17],
+};
+export const deckFor = (outing) => decks[outing ?? "any"];
+const available = (round) => deckFor(round.outing).filter((id) => !round.order.includes(id));
 
 export class RoundError extends Error {
   constructor(message, status = 409) {
@@ -22,9 +29,9 @@ export function member(id, name, tokenHash) {
   return { id, name, tokenHash, paused: false, votes: {}, favorite: null, agreed: false };
 }
 
-export function createRound(host) {
+export function createRound(host, outing = "any") {
   return {
-    host: host.id, members: [host], phase: "lobby", order: [],
+    host: host.id, members: [host], outing, phase: "lobby", order: [],
     shortlist: [], rejected: [], proposal: null, notice: "", extended: false,
   };
 }
@@ -88,7 +95,7 @@ export function applyAction(round, person, action) {
       if (round.phase !== "lobby" || round.members.length < 2) {
         throw new RoundError("Invite at least one friend to start.");
       }
-      round.order = shuffle(openingDeck);
+      round.order = shuffle(deckFor(round.outing)).slice(0, 12);
       round.phase = "swipe";
       break;
     case "pause": {
@@ -103,10 +110,10 @@ export function applyAction(round, person, action) {
       break;
     }
     case "extend":
-      if (!["empty", "confirm"].includes(round.phase) || round.extended) {
+      if (!["empty", "confirm"].includes(round.phase) || round.extended || !available(round).length) {
         throw new RoundError("All sample places have been shown.");
       }
-      round.order.push(...shuffle(extraDeck));
+      round.order.push(...shuffle(available(round)).slice(0, 6));
       round.extended = true;
       round.phase = "swipe";
       round.proposal = null;
@@ -116,7 +123,7 @@ export function applyAction(round, person, action) {
       break;
     case "restart":
       if (!["done", "empty"].includes(round.phase)) throw new RoundError("This round is still open.");
-      Object.assign(round, createRound(round.members[0]), {
+      Object.assign(round, createRound(round.members[0], round.outing), {
         members: round.members.map(({ id, name, tokenHash }) => member(id, name, tokenHash)),
       });
       break;
@@ -128,7 +135,7 @@ export function applyAction(round, person, action) {
 export function viewOf(round, person, code, revision) {
   const active = voters(round);
   return {
-    code, revision, phase: round.phase, host: round.host === person.id,
+    code, revision, phase: round.phase, host: round.host === person.id, outing: round.outing ?? "any",
     name: person.name, paused: person.paused,
     people: round.members.map(({ id, name, paused }) => ({ id, name, paused })),
     active: active.length,
@@ -136,6 +143,7 @@ export function viewOf(round, person, code, revision) {
     next: round.phase === "swipe" && !person.paused
       ? round.order.find((id) => !Object.hasOwn(person.votes, id)) ?? null : null,
     favorite: person.favorite, agreed: person.agreed, proposal: round.proposal,
-    matches: round.shortlist.slice(0, 3), notice: round.notice, canExtend: !round.extended,
+    matches: round.shortlist.slice(0, 3), notice: round.notice,
+    canExtend: !round.extended && available(round).length > 0,
   };
 }

@@ -13,6 +13,7 @@ const types = {
   "icon-512.png": "image/png",
   "apple-touch-icon.png": "image/png",
   "venue-photos.jpg": "image/jpeg",
+  "outing-photos.jpg": "image/jpeg",
 };
 const assets = {};
 for (const [file, type] of Object.entries(types)) {
@@ -22,7 +23,7 @@ for (const [file, type] of Object.entries(types)) {
 
 const rules = await readFile(new URL("dist/round.js", root), "utf8");
 const worker = await readFile(new URL("worker/index.js", root), "utf8");
-const importLine = 'import { RoundError, applyAction, createRound, member, viewOf } from "../dist/round.js";';
+const importLine = 'import { RoundError, applyAction, createRound, member, outingLabels, viewOf } from "../dist/round.js";';
 if (!worker.startsWith(importLine)) throw new Error("Missing shared round import in Worker entry point.");
 const destination = new URL("dist/server/", root);
 await mkdir(destination, { recursive: true });

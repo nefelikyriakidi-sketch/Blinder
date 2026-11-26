@@ -17,11 +17,23 @@ const places = [
   ["Cedar Cantina", "Mushroom street tacos", "Mexican", "Casual", "€€", "A short taco menu with a spicy mushroom filling."],
   ["Olive Steps", "Shared meze spread", "Greek", "Outdoor tables", "€€", "Little plates, cool dips, and tables along the pavement."],
   ["After Six", "Negroni aperitivo", "Cocktail bar", "Quiet", "€€", "A compact dinner-drinks spot with classic aperitifs."],
+  ["Saturday Club", "Blueberry ricotta pancakes", "Brunch", "Groups", "€€", "A bright breakfast room with fluffy pancakes and shared tables."],
+  ["Toast Garden", "Poached eggs on avocado toast", "Brunch", "Vegetarian options", "€€", "Sourdough toast, soft eggs, and a few seats by the window."],
+  ["Red Skillet", "Tomato shakshuka", "Brunch", "Cozy", "€€", "Eggs baked in spiced tomato sauce, with bread for dipping."],
+  ["Bagel Corner", "Smoked salmon bagel", "Brunch", "Casual", "€", "Seeded bagels, cream cheese, and coffee to sip outside."],
+  ["Morning Fig", "Berry French toast", "Brunch", "Cozy", "€€", "Golden French toast with yogurt and fruit in a small sunny café."],
+  ["Butter & Steam", "Croissant and cappuccino", "Bakery café", "Quiet", "€", "Flaky pastries with espresso at a few counter seats."],
+  ["Pink Hour", "Grapefruit spritz", "Cocktail bar", "Outdoor tables", "€€", "Citrus spritzes and a few tables on the terrace."],
+  ["Afterglow", "Espresso martini", "Cocktail bar", "Low-lit", "€€", "A small bar with espresso cocktails and velvet booths."],
+  ["The Green Light", "Basil and lime gimlet", "Cocktail bar", "Quiet", "€€", "Herbal cocktails and a room quiet enough to talk."],
+  ["Corner Tap", "Pale ale and pretzels", "Beer bar", "Lively", "€", "Local taps, salty pretzels, and a long communal table."],
+  ["Little Vine", "Red wine and a cheese plate", "Wine bar", "Cozy", "€€", "A small selection of wines by the glass and cheeses to share."],
+  ["Good Fizz", "Cucumber and mint fizz", "Zero-proof bar", "Groups", "€€", "A drinks list built around alcohol-free spritzes and house sodas."],
 ];
 
 const extraPhotos = [0, 1, 2, 6, 8, 11];
 
 export const venues = places.map(([name, dish, cuisine, vibe, price, description], id) => ({
   id, name, dish, cuisine, vibe, price, description,
-  photo: id < 12 ? id : extraPhotos[id - 12],
+  photo: id >= 18 ? id - 6 : id < 12 ? id : extraPhotos[id - 12],
 }));

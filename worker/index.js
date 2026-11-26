@@ -1,4 +1,4 @@
-import { RoundError, applyAction, createRound, member, viewOf } from "../dist/round.js";
+import { RoundError, applyAction, createRound, member, outingLabels, viewOf } from "../dist/round.js";
 
 const ROOM_LIFETIME = 24 * 60 * 60 * 1000;
 const MAX_MEMBERS = 12;
@@ -63,8 +63,12 @@ async function handleApi(request, db, context) {
 
   if (path === "/api/rooms" && request.method === "POST") {
     const body = await bodyOf(request);
+    const outing = body.outing ?? "any";
+    if (typeof outing !== "string" || !Object.hasOwn(outingLabels, outing)) {
+      throw new RoundError("Choose a supported outing.", 400);
+    }
     const { key, person } = await makeMember(body.name);
-    const room = createRound(person);
+    const room = createRound(person, outing);
     const code = token().slice(0, 12);
     const now = Date.now();
     await db.prepare("INSERT INTO rooms (code, expires_at, state) VALUES (?, ?, ?)")
